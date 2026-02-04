@@ -1,120 +1,101 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import { 
+  View, 
+  Text, 
+  KeyboardAvoidingView, 
+  Platform, 
+  ScrollView, 
+  TouchableOpacity,
+  Alert, 
+  Image
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as LocalAuthentication from 'expo-local-authentication';
-import { showToast } from '../components/common/Toast';
-import { validateLogin } from '../helpers/validation/auth';
-import FaceScanModal from '../components/common/FaceScanModal';
-import Container from '../components/common/Container';
+import Animated, { 
+  FadeInDown, 
+  FadeInUp,
+  useAnimatedStyle,
+  withSpring,
+  withSequence,
+  withDelay
+} from 'react-native-reanimated';
+import { useAuth } from '../contexts/AuthContext';
+import { useRouter } from 'expo-router';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import InteractiveBackground from '../components/common/InteractiveBackground';
+import FaceScanModal from '../components/common/FaceScanModal';
+import FingerprintScanModal from '../components/common/FingerprintScanModal';
+import * as Haptics from 'expo-haptics';
+import * as LocalAuthentication from 'expo-local-authentication';
 
 const LoginScreen = () => {
+  const { login, biometricLogin, isLoading, error, clearError } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [faceScanState, setFaceScanState] = useState({ visible: false, status: 'idle' });
-  const [supportedBiometrics, setSupportedBiometrics] = useState({
-    face: false,
-    fingerprint: false,
-  });
+  const [faceScanState, setFaceScanState] = useState({ visible: false, status: 'idle', type: 'face' });
 
-  const handleLogin = () => {
-    setFieldErrors({});
-    const { isValid, errors, value } = validateLogin({ email, password });
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => clearError(), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
-    if (!isValid) {
-      setFieldErrors(errors);
-      showToast.error('Validation Error', 'Please check your information');
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+    const success = await login(email, password);
+    if (success) {
+      router.replace('/(tabs)/home');
+    }
+  };
+
+  const handleBiometricLogin = async (type = 'face') => {
+    // 1. Check strict hardware availability for the requested type
+    const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+    
+    // Map our 'type' string to Expo constants
+    const requiredType = type === 'face' 
+      ? LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION
+      : LocalAuthentication.AuthenticationType.FINGERPRINT;
+
+    if (!supportedTypes.includes(requiredType)) {
+      const typeName = type === 'face' ? 'Face ID' : 'Fingerprint Scanner';
+      Alert.alert(
+        'Not Available', 
+        `${typeName} is not available or supported on this device. Please try another method.`
+      );
       return;
     }
 
-    console.log(JSON.stringify(value));
-    showToast.success('Login Successful', 'Welcome back to Welexo!');
+    setFaceScanState({ visible: true, status: 'scanning', type });
     
-    // Reset fields on success
-    setEmail('');
-    setPassword('');
-    setFieldErrors({});
-  };
-
-  useEffect(() => {
-    const checkBiometrics = async () => {
-      try {
-        const hasHardware = await LocalAuthentication.hasHardwareAsync();
-        const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-        const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
-
-        if (hasHardware && isEnrolled) {
-          const face = supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION);
-          const fingerprint = supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT);
-          
-          setSupportedBiometrics({ face, fingerprint });
-
-          if (face && !fingerprint) {
-            setTimeout(() => {
-              handleBiometricAuth(true); 
-            }, 1000);
-          }
-        }
-      } catch (error) {
-        console.log('Biometric check failed:', error);
-      }
-    };
-    
-    checkBiometrics();
-  }, []);
-
-  const handleBiometricAuth = async (isFace = false) => {
     try {
-      if (isFace) {
-        setFaceScanState({ visible: true, status: 'scanning' });
-      }
-
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: isFace ? 'Face Scan in Progress' : 'Sign in to Welexo',
-        fallbackLabel: 'Use password',
-        cancelLabel: 'Cancel',
-        disableDeviceFallback: true,
-      });
-
-      if (result.success) {
-        if (isFace) setFaceScanState(prev => ({ ...prev, status: 'captured' }));
+        const result = await biometricLogin(type);
         
-        setTimeout(() => {
-          if (isFace) setFaceScanState(prev => ({ ...prev, status: 'verified' }));
-          
-          setTimeout(() => {
-            setFaceScanState({ visible: false, status: 'idle' });
-            showToast.success('Biometric Login Success', 'Welcome back!');
-            setEmail('');
-            setPassword('');
-            setFieldErrors({});
-          }, isFace ? 1500 : 0);
-        }, isFace ? 1000 : 0);
-      } else {
-        if (isFace) setFaceScanState(prev => ({ ...prev, status: 'failed' }));
-        
-        setTimeout(() => {
-          setFaceScanState({ visible: false, status: 'idle' });
-          if (result.error !== 'user_cancel') {
-            showToast.error('Biometric Failed', 'Authentication unsuccessful');
-          }
-        }, isFace ? 2000 : 0);
-      }
-    } catch (error) {
-      setFaceScanState({ visible: false, status: 'idle' });
-      showToast.error('Biometric Error', 'An unexpected error occurred');
-      console.log('Biometric error:', error);
+        if (result.success) {
+            setFaceScanState({ visible: true, status: 'verified', type });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setTimeout(() => {
+                setFaceScanState({ visible: false, status: 'idle', type });
+                router.replace('/(tabs)/home');
+            }, 1000);
+        } else {
+            setFaceScanState({ visible: true, status: 'failed', type });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            setTimeout(() => setFaceScanState({ visible: false, status: 'idle', type }), 1500);
+        }
+    } catch (e) {
+        setFaceScanState({ visible: true, status: 'failed', type });
+        setTimeout(() => setFaceScanState({ visible: false, status: 'idle', type }), 1500);
     }
   };
 
-  const handleFaceIDAuth = () => handleBiometricAuth(true); 
-  const handleFingerprintAuth = () => handleBiometricAuth(false); 
-
   return (
-    <Container safe={false}>
+    <View className="flex-1 bg-slate-50">
       <InteractiveBackground />
       
       <KeyboardAvoidingView 
@@ -122,97 +103,153 @@ const LoginScreen = () => {
         className="flex-1"
       >
         <ScrollView 
-          contentContainerStyle={{ flexGrow: 1 }}
+          className="flex-1"
+          contentContainerStyle={{ 
+            flexGrow: 1, 
+            justifyContent: 'center', 
+            padding: 24,
+            paddingBottom: 40
+          }}
+          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="flex-1 justify-center px-6 pt-20 pb-10">
-            {/* Header */}
-            <View className="mb-12">
-              <Text className="text-white text-5xl font-bold tracking-tight mb-2">
-                Welcome
-              </Text>
-              <Text className="text-gray-200 text-lg">
-                Sign in to continue to 
-                <Text className="text-white">Welexo</Text>
-              </Text>
-            </View>
+          {/* Header Section */}
+          <Animated.View 
+            entering={FadeInDown.duration(800).delay(200).springify()}
+            className="items-center mb-4"
+          >
+           <View className="h-24 mb-6 items-center justify-center shadow-lg shadow-primary-500/20">
+            <Image 
+                source={require('../../assets/logo/welexo.png')} 
+                className="w-56 h-full" 
+                resizeMode="contain" 
+            />
+           </View>
+            <Text className="text-slate-500 text-center text-base font-medium tracking-wide max-w-[280px] leading-relaxed">
+              Your Gateway to Global Import–Export Insights
+            </Text>
+          </Animated.View>
 
-            {/* Login Card */}
-            <View className="bg-white/10 border border-white/20 rounded-[32px] p-6 backdrop-blur-md">
-              <Input
-                label="Email Address"
-                placeholder="name@example.com"
-                value={email}
-                onChangeText={setEmail}
-                leftIcon="mail-outline"
-                error={!!fieldErrors.email}
-                errorMessage={fieldErrors.email}
-              />
-              <Input
-                label="Password"
-                placeholder="••••••••"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                leftIcon="lock-closed-outline"
-                error={!!fieldErrors.password}
-                errorMessage={fieldErrors.password}
-              />
+          {/* Login Container */}
+          <Animated.View 
+            entering={FadeInUp.duration(800).delay(400).springify()}
+            className="w-full"
+          >
+            {/* Error Message */}
+            {error && (
+              <Animated.View 
+                entering={FadeInDown.springify()}
+                className="bg-red-50/90 border border-red-200 p-4 rounded-xl mb-6 flex-row items-center gap-3 shadow-sm"
+              >
+                <Ionicons name="alert-circle" size={20} color="#EF4444" />
+                <Text className="text-red-600 font-semibold text-sm flex-1">{error}</Text>
+              </Animated.View>
+            )}
+
+            {/* Main Card */}
+            <View className="bg-white/90 backdrop-blur-xl p-6 rounded-[32px] border border-slate-100 shadow-xl shadow-slate-200/50">
+              <Text className="text-slate-900 text-2xl font-bold mb-8 text-center tracking-tight">
+                Welcome Back
+              </Text>
               
-              <TouchableOpacity activeOpacity={0.6} className="self-end mb-6 mt-1">
-                <Text className="text-white tracking-wide font-medium">
-                  Forgot Password?
-                </Text>
-              </TouchableOpacity>
+              <View className="gap-2.5">
+                <Animated.View entering={FadeInDown.delay(500).duration(400)}>
+                  <Input
+                    label="Email Address"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    icon="mail-outline"
+                    className="mb-0"
+                  />
+                </Animated.View>
 
-              <View className="flex-row items-center space-x-3 gap-3">
-                <View className="flex-1">
+                <Animated.View entering={FadeInDown.delay(600).duration(400)}>
+                  <Input
+                    label="Password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    icon="lock-closed-outline"
+                    className="mb-0"
+                  />
+                </Animated.View>
+
+                <Animated.View entering={FadeInDown.delay(700).duration(400)}>
+                  <TouchableOpacity 
+                    className="self-end py-1"
+                    onPress={() => router.push('/(auth)/forgot-password')}
+                  >
+                    <Text className="text-primary-500 font-semibold text-sm">Forgot Password?</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+
+                <Animated.View entering={FadeInDown.delay(800).duration(400)} className="pt-2">
                   <Button 
                     title="Sign In" 
-                    onPress={handleLogin} 
-                    rightIcon="arrow-forward"
+                    onPress={handleLogin}
+                    isLoading={isLoading}
                   />
-                </View>
-                
-                {/* Face ID Button - Only if supported */}
-                {supportedBiometrics.face && (
-                  <TouchableOpacity 
-                    activeOpacity={0.7}
-                    className="bg-white/10 border border-white/20 h-[60px] w-[60px] rounded-2xl items-center justify-center"
-                    onPress={handleFaceIDAuth}
-                  >
-                    <Ionicons name="scan-outline" size={26} color="white" />
-                  </TouchableOpacity>
-                )}
+                </Animated.View>
 
-                {/* Fingerprint Button - Only if supported */}
-                {supportedBiometrics.fingerprint && (
+                <Animated.View 
+                  entering={FadeInDown.delay(900).duration(400)}
+                  className="flex-row items-center gap-4 py-4"
+                >
+                  <View className="flex-1 h-[1px] bg-slate-200" />
+                  <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider">or continue with</Text>
+                  <View className="flex-1 h-[1px] bg-slate-200" />
+                </Animated.View>
+
+                <Animated.View 
+                  entering={FadeInDown.delay(1000).duration(400)}
+                  className="flex-row gap-4"
+                >
                   <TouchableOpacity 
                     activeOpacity={0.7}
-                    className="bg-white/10 border border-white/20 h-[60px] w-[60px] rounded-2xl items-center justify-center"
-                    onPress={handleFingerprintAuth}
+                    onPress={() => handleBiometricLogin('face')}
+                    className="flex-1 flex-row items-center justify-center gap-2 bg-slate-50 py-4 rounded-2xl border border-slate-200 shadow-sm"
                   >
-                    <Ionicons name="finger-print" size={26} color="white" />
+                    <View className="w-8 h-8 rounded-full bg-primary-50 items-center justify-center">
+                      <Ionicons name="scan-outline" size={18} color="#0176FF" />
+                    </View>
+                    <Text className="text-slate-600 font-semibold text-sm">Face ID</Text>
                   </TouchableOpacity>
-                )}
+
+                  <TouchableOpacity 
+                    activeOpacity={0.7}
+                    onPress={() => handleBiometricLogin('fingerprint')}
+                    className="flex-1 flex-row items-center justify-center gap-2 bg-slate-50 py-4 rounded-2xl border border-slate-200 shadow-sm"
+                  >
+                    <View className="w-8 h-8 rounded-full bg-primary-50 items-center justify-center">
+                      <Ionicons name="finger-print" size={18} color="#0176FF" />
+                    </View>
+                    <Text className="text-slate-600 font-semibold text-sm">Fingerprint</Text>
+                  </TouchableOpacity>
+                </Animated.View>
               </View>
             </View>
-
-            {/* Footer */}
-            <View className="mt-auto items-center pt-10">
-              <Text className="text-white tracking-wide text-[13px] text-center px-10">
-                By continuing, you agree to our Terms of Service & Privacy Policy
-              </Text>
-            </View>
-          </View>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
-      <FaceScanModal 
-        visible={faceScanState.visible} 
-        status={faceScanState.status} 
-        onDismiss={() => setFaceScanState({ visible: false, status: 'idle' })}
-      />
-    </Container>
+
+      {faceScanState.type === 'face' ? (
+        <FaceScanModal 
+            visible={faceScanState.visible} 
+            status={faceScanState.status} 
+            onDismiss={() => setFaceScanState({ visible: false, status: 'idle', type: 'face' })}
+        />
+      ) : (
+        <FingerprintScanModal
+            visible={faceScanState.visible} 
+            status={faceScanState.status} 
+            onDismiss={() => setFaceScanState({ visible: false, status: 'idle', type: 'fingerprint' })}
+        />
+      )}
+    </View>
   );
 };
 

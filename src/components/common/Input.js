@@ -18,7 +18,8 @@ const Input = ({
   leftIcon, 
   error, 
   errorMessage,
-  className = "" 
+  className = "",
+  editable = true
 }) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -43,13 +44,13 @@ const Input = ({
     const borderColor = interpolateColor(
       focusAnim.value,
       [0, 1],
-      ['#edf5fa', error ? '#FF4F4F' : '#fff']
+      ['#E2E8F0', error ? '#EF4444' : '#0176FF'] // Using slate-200 and accent-error
     );
     
     return {
       borderColor,
       backgroundColor: withTiming(
-        isFocused ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+        isFocused ? '#FFFFFF' : '#F8FAFC', // white vs slate-50
         { 
           duration: 200,
           reduceMotion: ReduceMotion.Never
@@ -62,8 +63,8 @@ const Input = ({
     <View className={`mb-5 w-full ${className}`}>
       {label && (
         <Text className={`
-          text-[11px] font-bold uppercase tracking-widest mb-1.5 ml-1
-          ${error ? 'text-[#FF4F4F]' : 'text-white'}
+          text-[11px] font-bold uppercase tracking-widest mb-2 ml-1
+          ${error ? 'text-accent-error' : 'text-slate-500'}
         `}>
           {label}
         </Text>
@@ -71,29 +72,30 @@ const Input = ({
       
       <Animated.View 
         style={containerStyle}
-        className="border-2 rounded-2xl flex-row items-center overflow-hidden h-[60px] px-5"
+        className="border-[1.5px] rounded-2xl flex-row items-center overflow-hidden h-[60px] px-5 shadow-sm shadow-slate-100"
       >
         {leftIcon && (
           <Ionicons 
             name={leftIcon} 
             size={20} 
-            color={error ? '#FF4F4F' : (isFocused ? '#fff' : '#fff')} 
+            color={error ? '#EF4444' : (isFocused ? '#0176FF' : '#94A3B8')} 
             style={{ marginRight: 12 }}
           />
         )}
         
         <TextInput
-          className="flex-1 text-white text-[16px] h-full"
+          className={`flex-1 text-slate-900 text-[16px] h-full ${!editable ? 'opacity-60' : ''}`}
           style={Platform.OS === 'web' ? { outlineWidth: 0 } : {}}
           underlineColorAndroid="transparent"
           placeholder={placeholder}
-          placeholderTextColor="rgba(255, 255, 255, 0.3)"
+          placeholderTextColor="#94A3B8"
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={shouldHideText}
           autoCapitalize="none"
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
+          editable={editable}
         />
 
         {isPassword && (
@@ -105,14 +107,14 @@ const Input = ({
             <Ionicons 
               name={isPasswordVisible ? "eye-off-outline" : "eye-outline"} 
               size={20} 
-              color="#fff" 
+              color="#94A3B8" 
             />
           </TouchableOpacity>
         )}
       </Animated.View>
 
       {error && errorMessage && (
-        <Text className="text-[#FF4F4F] text-[12px] mt-1 ml-1 font-medium">
+        <Text className="text-accent-error text-[12px] mt-1.5 ml-1 font-medium">
           {errorMessage}
         </Text>
       )}

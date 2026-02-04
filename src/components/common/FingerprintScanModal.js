@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle, 
   withRepeat, 
   withTiming, 
+  withDelay,
   interpolate,
   Easing,
   ReduceMotion 
@@ -15,24 +16,37 @@ import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 
-const FaceScanModal = ({ visible, status, onDismiss }) => {
-  const scanAnim = useSharedValue(0);
+const FingerprintScanModal = ({ visible, status, onDismiss }) => {
   const pulseAnim = useSharedValue(1);
   const opacityAnim = useSharedValue(0);
-  const [displayText, setDisplayText] = useState('Position your face');
+  const ripple1Anim = useSharedValue(0);
+  const ripple2Anim = useSharedValue(0);
+  const ripple3Anim = useSharedValue(0);
+
+  const [displayText, setDisplayText] = useState('Touch the sensor');
 
   useEffect(() => {
     if (visible) {
       opacityAnim.value = withTiming(1, { duration: 300 });
-      scanAnim.value = withRepeat(
-        withTiming(1, { 
-          duration: 2000, 
-          easing: Easing.inOut(Easing.quad),
-          reduceMotion: ReduceMotion.Never
-        }),
-        -1,
-        true
+
+      // Fingerprint Ripple Animations
+      const baseDuration = 1500;
+      ripple1Anim.value = withRepeat(
+        withTiming(1, { duration: baseDuration, easing: Easing.out(Easing.ease) }),
+        -1, false
       );
+      ripple2Anim.value = withDelay(400, withRepeat(
+        withTiming(1, { duration: baseDuration, easing: Easing.out(Easing.ease) }),
+        -1, false
+      ));
+      ripple3Anim.value = withDelay(800, withRepeat(
+        withTiming(1, { duration: baseDuration, easing: Easing.out(Easing.ease) }),
+        -1, false
+      ));
+      
+      // Initial Haptic
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
       pulseAnim.value = withRepeat(
         withTiming(1.05, { 
           duration: 1000,
@@ -43,18 +57,23 @@ const FaceScanModal = ({ visible, status, onDismiss }) => {
       );
     } else {
       opacityAnim.value = withTiming(0, { duration: 200 });
-      scanAnim.value = 0;
       pulseAnim.value = 1;
+      ripple1Anim.value = 0;
+      ripple2Anim.value = 0;
+      ripple3Anim.value = 0;
     }
   }, [visible]);
 
   useEffect(() => {
     switch (status) {
       case 'scanning':
-        setDisplayText('Scanning Face...');
+        setDisplayText('Scanning Fingerprint...');
+        if (visible) {
+           Haptics.selectionAsync();
+        }
         break;
       case 'captured':
-        setDisplayText('Face Captured!');
+        setDisplayText('Fingerprint Captured!');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         break;
       case 'verified':
@@ -66,14 +85,9 @@ const FaceScanModal = ({ visible, status, onDismiss }) => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         break;
       default:
-        setDisplayText('Position your face');
+        setDisplayText('Touch the sensor');
     }
-  }, [status]);
-
-  const scanLineStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: interpolate(scanAnim.value, [0, 1], [0, 200]) }],
-    opacity: status === 'scanning' ? withTiming(1) : withTiming(0)
-  }));
+  }, [status, visible]);
 
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseAnim.value }],
@@ -85,23 +99,14 @@ const FaceScanModal = ({ visible, status, onDismiss }) => {
     transform: [{ scale: interpolate(opacityAnim.value, [0, 1], [0.9, 1]) }]
   }));
 
-  const getStatusIcon = () => {
-    switch (status) {
-      case 'verified': return 'checkmark-circle';
-      case 'failed': return 'alert-circle';
-      case 'captured': return 'camera';
-      default: return 'scan-outline';
-    }
-  };
+  const createRippleStyle = (animValue) => useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(animValue.value, [0, 1], [0.8, 2.5]) }],
+    opacity: interpolate(animValue.value, [0, 0.5, 1], [0.8, 0.4, 0])
+  }));
 
-  const getStatusColor = () => {
-    switch (status) {
-      case 'verified': return '#10B981'; // accent-success
-      case 'failed': return '#EF4444';   // accent-error
-      case 'captured': return '#0176FF'; // primary-500
-      default: return '#0176FF';
-    }
-  };
+  const ripple1Style = createRippleStyle(ripple1Anim);
+  const ripple2Style = createRippleStyle(ripple2Anim);
+  const ripple3Style = createRippleStyle(ripple3Anim);
 
   return (
     <Modal visible={visible} transparent animationType="none">
@@ -124,41 +129,34 @@ const FaceScanModal = ({ visible, status, onDismiss }) => {
           ]}
           className="rounded-[40px] p-8 w-full items-center overflow-hidden"
         >
-          {/* Status Icon Wrapper */}
-          <Animated.View style={pulseStyle} className="mb-8">
-            <View className="w-20 h-20 rounded-full items-center justify-center bg-slate-50 border border-slate-100 shadow-sm">
-              <Ionicons name={getStatusIcon()} size={40} color={getStatusColor()} />
-            </View>
-          </Animated.View>
-
-          {/* Face Scan UI */}
-          <View className="border border-slate-200 rounded-3xl w-56 h-56 items-center justify-center overflow-hidden bg-slate-50/30">
+          {/* Main Fingerprint UI */}
+          <View className="items-center justify-center py-8">
+            {/* Ripples */}
             {status === 'scanning' && (
-              <Animated.View 
-                style={[
-                  scanLineStyle,
-                  {
-                    width: '100%',
-                    height: 2,
-                    backgroundColor: '#0176FF',
-                    position: 'absolute',
-                    top: 0,
-                    zIndex: 10,
-                    shadowColor: '#0176FF',
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 1,
-                    shadowRadius: 10,
-                  }
-                ]}
-              />
+              <>
+                <Animated.View style={[StyleSheet.absoluteFill, ripple1Style, { justifyContent:'center', alignItems:'center' }]}>
+                   <View className="w-20 h-20 rounded-full border border-primary-500/30 bg-primary-500/10" />
+                </Animated.View>
+                <Animated.View style={[StyleSheet.absoluteFill, ripple2Style, { justifyContent:'center', alignItems:'center' }]}>
+                   <View className="w-20 h-20 rounded-full border border-primary-500/20" />
+                </Animated.View>
+                <Animated.View style={[StyleSheet.absoluteFill, ripple3Style, { justifyContent:'center', alignItems:'center' }]}>
+                   <View className="w-20 h-20 rounded-full border border-primary-500/10" />
+                </Animated.View>
+              </>
             )}
-            <Ionicons name="person-outline" size={120} color="#E2E8F0" />
             
-            {/* Corner Borders */}
-            <View className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-primary-500 rounded-tl-lg" />
-            <View className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-primary-500 rounded-tr-lg" />
-            <View className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-primary-500 rounded-bl-lg" />
-            <View className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-primary-500 rounded-br-lg" />
+            {/* Main Sensor Icon */}
+            <Animated.View 
+              style={status === 'scanning' ? pulseStyle : undefined}
+              className={`w-28 h-28 rounded-full items-center justify-center ${status === 'scanning' ? 'bg-primary-50 border-primary-100' : 'bg-slate-50 border-slate-100'} border-2`}
+            >
+              <Ionicons 
+                name="finger-print" 
+                size={64} 
+                color={status === 'scanning' ? '#0176FF' : '#94A3B8'} 
+              />
+            </Animated.View>
           </View>
 
           {/* Text Feedback */}
@@ -167,7 +165,9 @@ const FaceScanModal = ({ visible, status, onDismiss }) => {
               {displayText}
             </Text>
             <Text className="text-slate-500 text-sm mt-2 font-medium text-center">
-              {status === 'scanning' ? 'Keep steady, scanning...' : 'Authentication In Progress'}
+              {status === 'scanning' 
+                ? 'Hold your finger on the sensor' 
+                : 'Authentication In Progress'}
             </Text>
           </View>
 
@@ -187,4 +187,4 @@ const FaceScanModal = ({ visible, status, onDismiss }) => {
   );
 };
 
-export default FaceScanModal;
+export default FingerprintScanModal;
