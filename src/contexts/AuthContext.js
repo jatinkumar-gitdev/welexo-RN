@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import useAuthStore from '../services/authStore';
 
-const AuthContext = createContext({});
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const {
@@ -24,9 +24,10 @@ export function AuthProvider({ children }) {
   // Check auth status on app start
   useEffect(() => {
     checkAuthStatus();
-  }, []);
+  }, [checkAuthStatus]);
 
-  const authValue = {
+  // Memoize context value to prevent unnecessary re-renders
+  const authValue = useMemo(() => ({
     isAuthenticated,
     user,
     token,
@@ -40,7 +41,21 @@ export function AuthProvider({ children }) {
     disableBiometric,
     clearError,
     updateUser
-  };
+  }), [
+    isAuthenticated,
+    user,
+    token,
+    isLoading,
+    error,
+    isCheckingAuth,
+    login,
+    biometricLogin,
+    logout,
+    enableBiometric,
+    disableBiometric,
+    clearError,
+    updateUser
+  ]);
 
   return (
     <AuthContext.Provider value={authValue}>
@@ -51,7 +66,7 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === null) {
     throw new Error('useAuth must be used within AuthProvider');
   }
   return context;

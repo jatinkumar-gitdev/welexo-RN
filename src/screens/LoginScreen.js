@@ -10,14 +10,7 @@ import {
   Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { 
-  FadeInDown, 
-  FadeInUp,
-  useAnimatedStyle,
-  withSpring,
-  withSequence,
-  withDelay
-} from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import Input from '../components/common/Input';

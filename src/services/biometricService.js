@@ -1,4 +1,4 @@
-import * as LocalAuthentication from 'expo-local-authentication';
+import * as LocalAuthentication from "expo-local-authentication";
 
 /**
  * Biometric Authentication Service
@@ -13,7 +13,7 @@ class BiometricAuthService {
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
       return hasHardware;
     } catch (error) {
-      console.error('Error checking hardware support:', error);
+      console.error("Error checking hardware support:", error);
       return false;
     }
   }
@@ -26,7 +26,7 @@ class BiometricAuthService {
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
       return isEnrolled;
     } catch (error) {
-      console.error('Error checking biometric enrollment:', error);
+      console.error("Error checking biometric enrollment:", error);
       return false;
     }
   }
@@ -36,15 +36,22 @@ class BiometricAuthService {
    */
   static async getSupportedAuthenticationTypes() {
     try {
-      const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      const supportedTypes =
+        await LocalAuthentication.supportedAuthenticationTypesAsync();
       const result = {
-        face: supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION),
-        fingerprint: supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT),
-        iris: supportedTypes.includes(LocalAuthentication.AuthenticationType.IRIS),
+        face: supportedTypes.includes(
+          LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION,
+        ),
+        fingerprint: supportedTypes.includes(
+          LocalAuthentication.AuthenticationType.FINGERPRINT,
+        ),
+        iris: supportedTypes.includes(
+          LocalAuthentication.AuthenticationType.IRIS,
+        ),
       };
       return result;
     } catch (error) {
-      console.error('Error getting supported authentication types:', error);
+      console.error("Error getting supported authentication types:", error);
       return { face: false, fingerprint: false, iris: false };
     }
   }
@@ -56,10 +63,10 @@ class BiometricAuthService {
     try {
       const hasHardware = await this.hasHardwareSupport();
       const isEnrolled = await this.isBiometricEnrolled();
-      
+
       return hasHardware && isEnrolled;
     } catch (error) {
-      console.error('Error checking biometric availability:', error);
+      console.error("Error checking biometric availability:", error);
       return false;
     }
   }
@@ -67,12 +74,14 @@ class BiometricAuthService {
   /**
    * Performs face recognition authentication
    */
-  static async authenticateWithFace(promptMessage = 'Authenticate with Face ID') {
+  static async authenticateWithFace(
+    promptMessage = "Authenticate with Face ID",
+  ) {
     try {
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage,
-        fallbackLabel: 'Use password instead',
-        cancelLabel: 'Cancel',
+        fallbackLabel: "Use password instead",
+        cancelLabel: "Cancel",
         disableDeviceFallback: false,
         biometryType: LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION,
       });
@@ -81,15 +90,15 @@ class BiometricAuthService {
         success: result.success,
         error: result.error,
         authenticated: result.success,
-        details: result
+        details: result,
       };
     } catch (error) {
-      console.error('Face recognition error:', error);
+      console.error("Face recognition error:", error);
       return {
         success: false,
-        error: error.message || 'Face recognition failed',
+        error: error.message || "Face recognition failed",
         authenticated: false,
-        details: null
+        details: null,
       };
     }
   }
@@ -97,12 +106,14 @@ class BiometricAuthService {
   /**
    * Performs fingerprint authentication
    */
-  static async authenticateWithFingerprint(promptMessage = 'Authenticate with Fingerprint') {
+  static async authenticateWithFingerprint(
+    promptMessage = "Authenticate with Fingerprint",
+  ) {
     try {
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage,
-        fallbackLabel: 'Use password instead',
-        cancelLabel: 'Cancel',
+        fallbackLabel: "Use password instead",
+        cancelLabel: "Cancel",
         disableDeviceFallback: false,
         biometryType: LocalAuthentication.AuthenticationType.FINGERPRINT,
       });
@@ -111,15 +122,15 @@ class BiometricAuthService {
         success: result.success,
         error: result.error,
         authenticated: result.success,
-        details: result
+        details: result,
       };
     } catch (error) {
-      console.error('Fingerprint authentication error:', error);
+      console.error("Fingerprint authentication error:", error);
       return {
         success: false,
-        error: error.message || 'Fingerprint authentication failed',
+        error: error.message || "Fingerprint authentication failed",
         authenticated: false,
-        details: null
+        details: null,
       };
     }
   }
@@ -129,10 +140,10 @@ class BiometricAuthService {
    */
   static async authenticateBiometrically(options = {}) {
     const {
-      promptMessage = 'Authenticate to continue',
+      promptMessage = "Authenticate to continue",
       useFace = true,
       useFingerprint = true,
-      allowManualRetry = true
+      allowManualRetry = true,
     } = options;
 
     try {
@@ -143,7 +154,7 @@ class BiometricAuthService {
       if (useFace && supportedTypes.face) {
         return await this.authenticateWithFace(promptMessage);
       }
-      
+
       // Fall back to fingerprint if available and requested
       if (useFingerprint && supportedTypes.fingerprint) {
         return await this.authenticateWithFingerprint(promptMessage);
@@ -152,18 +163,17 @@ class BiometricAuthService {
       // If neither type is available or requested, return error
       return {
         success: false,
-        error: 'No supported biometric authentication method available',
+        error: "No supported biometric authentication method available",
         authenticated: false,
-        details: null
+        details: null,
       };
-
     } catch (error) {
-      console.error('Biometric authentication error:', error);
+      console.error("Biometric authentication error:", error);
       return {
         success: false,
-        error: error.message || 'Biometric authentication failed',
+        error: error.message || "Biometric authentication failed",
         authenticated: false,
-        details: null
+        details: null,
       };
     }
   }
@@ -183,10 +193,11 @@ class BiometricAuthService {
         isAvailable: hasHardware && isEnrolled,
         supportedTypes,
         canUseFace: hasHardware && isEnrolled && supportedTypes.face,
-        canUseFingerprint: hasHardware && isEnrolled && supportedTypes.fingerprint,
+        canUseFingerprint:
+          hasHardware && isEnrolled && supportedTypes.fingerprint,
       };
     } catch (error) {
-      console.error('Error getting biometric credentials state:', error);
+      console.error("Error getting biometric credentials state:", error);
       return {
         hasHardware: false,
         isEnrolled: false,
@@ -209,7 +220,7 @@ class BiometricAuthService {
       const credentialsState = await this.getBiometricCredentialsState();
       return credentialsState;
     } catch (error) {
-      console.error('Error requesting biometric permission:', error);
+      console.error("Error requesting biometric permission:", error);
       return {
         hasHardware: false,
         isEnrolled: false,
