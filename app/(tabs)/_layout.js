@@ -1,5 +1,5 @@
-import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useAnimatedStyle,
   withSpring,
@@ -11,14 +11,20 @@ import Animated, {
   withSequence,
   withRepeat,
   withDelay,
-} from 'react-native-reanimated';
-import { View, Dimensions, Pressable, Platform, StyleSheet } from 'react-native';
-import TabsHeader from '../../src/components/common/TabsHeader';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
-import { useEffect } from 'react';
+} from "react-native-reanimated";
+import {
+  View,
+  Dimensions,
+  Pressable,
+  Platform,
+  StyleSheet,
+} from "react-native";
+import TabsHeader from "../../src/components/common/TabsHeader";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
+import { useEffect } from "react";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 // Design System Constants - Polished Pro Tokens
 const DESIGN_TOKENS = {
@@ -26,38 +32,40 @@ const DESIGN_TOKENS = {
   barHeight: 70,
   barRadius: 40,
   tabSpacing: 6,
-  
+
   background: {
-    primary: '#0F172A', // Deep Slate
-    secondary: '#1E293B', // Border/Highlight
-    accent: '#0176FF', // Welexo Blue
-    accentGlow: 'rgba(1, 118, 255, 0.4)',
-    accentFaded: 'rgba(1, 118, 255, 0.1)',
+    primary: "#0F172A", // Deep Slate
+    secondary: "#1E293B", // Border/Highlight
+    accent: "#0176FF", // Welexo Blue
+    accentGlow: "rgba(1, 118, 255, 0.4)",
+    accentFaded: "rgba(1, 118, 255, 0.1)",
   },
-  
+
   text: {
-    active: '#FFFFFF',
-    inactive: '#94A3B8',
+    active: "#FFFFFF",
+    inactive: "#94A3B8",
   },
 
   springs: {
     pro: { damping: 18, stiffness: 120, mass: 0.6 }, // Snappy but organic
     soft: { damping: 25, stiffness: 100 },
     bounce: { damping: 12, stiffness: 200 },
-  }
+  },
 };
 
-const TAB_WIDTH = (DESIGN_TOKENS.barWidth - (DESIGN_TOKENS.tabSpacing * 2)) / 5;
+const TAB_WIDTH = (DESIGN_TOKENS.barWidth - DESIGN_TOKENS.tabSpacing * 2) / 5;
 
 function CustomTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
-  
+
   const indicatorPosition = useDerivedValue(() => {
     return withSpring(state.index * TAB_WIDTH, DESIGN_TOKENS.springs.pro);
   });
 
   const glowStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: indicatorPosition.value + DESIGN_TOKENS.tabSpacing }],
+    transform: [
+      { translateX: indicatorPosition.value + DESIGN_TOKENS.tabSpacing },
+    ],
   }));
 
   return (
@@ -65,7 +73,6 @@ function CustomTabBar({ state, descriptors, navigation }) {
       <View style={styles.tabBar}>
         {/* Active Ambient Glow */}
         <Animated.View style={[styles.glow, glowStyle]} />
-        
 
         <View style={styles.tabsContainer}>
           {state.routes.map((route, index) => {
@@ -73,12 +80,12 @@ function CustomTabBar({ state, descriptors, navigation }) {
             const isCenter = index === 2;
 
             const onPress = () => {
-              if (Platform.OS !== 'web') {
+              if (Platform.OS !== "web") {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }
 
               const event = navigation.emit({
-                type: 'tabPress',
+                type: "tabPress",
                 target: route.key,
                 canPreventDefault: true,
               });
@@ -89,11 +96,11 @@ function CustomTabBar({ state, descriptors, navigation }) {
             };
 
             const iconMap = {
-              home: 'home',
-              history: 'time',
-              scan: 'globe',
-              settings: 'settings',
-              profile: 'person',
+              home: "home",
+              history: "time",
+              "global-search-shipment": "globe",
+              settings: "settings",
+              profile: "person",
             };
 
             return (
@@ -102,7 +109,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
                 isFocused={isFocused}
                 isCenter={isCenter}
                 onPress={onPress}
-                iconName={iconMap[route.name] || 'circle'}
+                iconName={iconMap[route.name] || "circle"}
               />
             );
           })}
@@ -121,10 +128,10 @@ function TabButton({ isFocused, isCenter, onPress, iconName }) {
       pulse.value = withRepeat(
         withSequence(
           withTiming(1.1, { duration: 1500 }),
-          withTiming(1, { duration: 1500 })
+          withTiming(1, { duration: 1500 }),
         ),
         -1,
-        true
+        true,
       );
     }
   }, [isCenter]);
@@ -160,7 +167,7 @@ function TabButton({ isFocused, isCenter, onPress, iconName }) {
       >
         <Animated.View style={[styles.centerButton, centerAnimStyle]}>
           <Ionicons name={iconName} size={32} color="#FFFFFF" />
-          
+
           {/* Animated Pulse Ring */}
           <Animated.View style={[styles.pulseRing, pulseStyle]} />
         </Animated.View>
@@ -179,7 +186,9 @@ function TabButton({ isFocused, isCenter, onPress, iconName }) {
         <Ionicons
           name={isFocused ? iconName : `${iconName}-outline`}
           size={24}
-          color={isFocused ? DESIGN_TOKENS.text.active : DESIGN_TOKENS.text.inactive}
+          color={
+            isFocused ? DESIGN_TOKENS.text.active : DESIGN_TOKENS.text.inactive
+          }
         />
       </Animated.View>
     </Pressable>
@@ -188,20 +197,20 @@ function TabButton({ isFocused, isCenter, onPress, iconName }) {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
-    alignItems: 'center',
+    alignItems: "center",
   },
   tabBar: {
     width: DESIGN_TOKENS.barWidth,
     height: DESIGN_TOKENS.barHeight,
     backgroundColor: DESIGN_TOKENS.background.primary,
     borderRadius: DESIGN_TOKENS.barRadius,
-    flexDirection: 'row',
+    flexDirection: "row",
     borderWidth: 1,
     borderColor: DESIGN_TOKENS.background.secondary,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.4,
     shadowRadius: 20,
@@ -209,24 +218,24 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: DESIGN_TOKENS.tabSpacing,
   },
   tabButton: {
     flex: 1,
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonInner: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   centerWrapper: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 10,
   },
   centerButton: {
@@ -235,8 +244,8 @@ const styles = StyleSheet.create({
     backgroundColor: DESIGN_TOKENS.background.accent,
     borderRadius: 30,
     top: -24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 5,
     borderColor: DESIGN_TOKENS.background.primary,
     shadowColor: DESIGN_TOKENS.background.accent,
@@ -246,7 +255,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   pulseRing: {
-    position: 'absolute',
+    position: "absolute",
     width: 70,
     height: 70,
     borderRadius: 35,
@@ -254,7 +263,7 @@ const styles = StyleSheet.create({
     borderColor: DESIGN_TOKENS.background.accent,
   },
   glow: {
-    position: 'absolute',
+    position: "absolute",
     width: TAB_WIDTH,
     height: 40,
     backgroundColor: DESIGN_TOKENS.background.accentFaded,
@@ -266,20 +275,26 @@ const styles = StyleSheet.create({
 export default function TabsLayout() {
   return (
     <Tabs
-      tabBar={props => <CustomTabBar {...props} />}
+      tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
       }}
     >
-      <Tabs.Screen 
-        name="home" 
-        options={{ 
-          header: () => <TabsHeader />, 
-          headerShown: true 
-        }} 
+      <Tabs.Screen
+        name="home"
+        options={{
+          header: () => <TabsHeader />,
+          headerShown: true,
+        }}
       />
       <Tabs.Screen name="history" />
-      <Tabs.Screen name="scan" />
+      <Tabs.Screen
+        name="global-search-shipment"
+        options={{
+          header: () => <TabsHeader />,
+          headerShown: true,
+        }}
+      />
       <Tabs.Screen name="settings" />
       <Tabs.Screen name="profile" />
     </Tabs>
