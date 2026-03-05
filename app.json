@@ -2,12 +2,12 @@
   "expo": {
     "name": "welexo-app",
     "slug": "welexo-app",
+    "scheme": "welexo-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "jsEngine": "jsc",
+    "jsEngine": "hermes",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -27,8 +27,9 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "plugins": [
-      "expo-router"
-    ]
+    "plugins": ["expo-router"],
+    "updates": {
+      "enabled": false
+    }
   }
 }

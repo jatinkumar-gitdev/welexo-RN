@@ -15,8 +15,6 @@ import countriesData from "../../constants/countries.json";
 const MultiSelectCountry = ({ label, required, value = [], onSelect }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Helper to check if a country is selected
   const isSelected = (code) => value.includes(code);
 
   const allCountriesFlat = useMemo(() => {
@@ -30,7 +28,6 @@ const MultiSelectCountry = ({ label, required, value = [], onSelect }) => {
     return countriesData.tradeModes || [];
   }, []);
 
-  // Helper to get country object from code
   const getCountryByCode = (code) => {
     return (
       allCountriesFlat.find((c) => c.code === code) ||
@@ -38,7 +35,6 @@ const MultiSelectCountry = ({ label, required, value = [], onSelect }) => {
     );
   };
 
-  // Toggle individual selection
   const toggleSelection = (code) => {
     const isTradeMode = allTradeModesFlat.some((t) => t.code === code);
     let newValue;
@@ -46,10 +42,8 @@ const MultiSelectCountry = ({ label, required, value = [], onSelect }) => {
       newValue = value.filter((c) => c !== code);
     } else {
       if (isTradeMode) {
-        // If selecting a trade mode (Silkroute), clear all countries
         newValue = [code];
       } else {
-        // If selecting a country, remove any trade modes (Silkroute)
         const tradeModeCodes = allTradeModesFlat.map((t) => t.code);
         newValue = [...value.filter((c) => !tradeModeCodes.includes(c)), code];
       }
@@ -70,12 +64,10 @@ const MultiSelectCountry = ({ label, required, value = [], onSelect }) => {
     if (isAllSelected) {
       onSelect([]);
     } else {
-      // Selecting all countries removes any trade modes (Silkroute)
       onSelect([...allCountryCodes]);
     }
   };
 
-  // Continent selection logic
   const toggleContinent = (continentName) => {
     const continent = countriesData.continents.find(
       (c) => c.name === continentName,
@@ -89,7 +81,6 @@ const MultiSelectCountry = ({ label, required, value = [], onSelect }) => {
     if (allContinentSelected) {
       newValue = value.filter((code) => !continentCodes.includes(code));
     } else {
-      // Selecting continent countries removes any trade modes (Silkroute)
       const tradeModeCodes = allTradeModesFlat.map((t) => t.code);
       newValue = [
         ...new Set([
@@ -113,7 +104,6 @@ const MultiSelectCountry = ({ label, required, value = [], onSelect }) => {
     );
   };
 
-  // Filtered data
   const filteredData = useMemo(() => {
     if (!searchQuery) return countriesData;
 

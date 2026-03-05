@@ -24,6 +24,13 @@ export default function GlobalSearchForm() {
     setFormData((prev) => ({ ...prev, country: selectedCountries }));
   };
 
+  const handlePickerSelect = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const isSilkrouteSelected = formData.country.includes("SILKROUTE");
+  const hasSelectedCountries = formData.country.length > 0;
+
   return (
     <View className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
       {/* Banner */}
@@ -47,7 +54,11 @@ export default function GlobalSearchForm() {
         placeholder="Select Type"
         required
         value={formData.shipmentType}
+        options={["Exporter", "Importer"]}
+        onSelect={(val) => handlePickerSelect("shipmentType", val)}
+        disabled={!hasSelectedCountries || isSilkrouteSelected}
       />
+
       <CustomPicker
         label="Time Period"
         placeholder="1 Month"

@@ -18,7 +18,7 @@ export default function GlobalSearchShipmentScreen() {
         </View>
 
         {/* Bottom Spacing for tabs */}
-        <View className="h-32" />
+        <View className="h-40" />
       </ScrollView>
     </View>
   );

@@ -1,7 +1,7 @@
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../src/contexts/AuthContext';
-import { useRouter } from 'expo-router';
+import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "../../src/contexts/AuthContext";
+import { useRouter } from "expo-router";
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -9,27 +9,33 @@ export default function ProfileScreen() {
 
   const handleLogout = () => {
     logout();
-    router.replace('/(auth)/login');
+    router.replace("/(auth)/login");
   };
 
   return (
-    <ScrollView 
+    <ScrollView
       className="flex-1 bg-gray-50"
-      contentContainerStyle={{ paddingBottom: 140 }}
+      contentContainerStyle={{ paddingBottom: 180 }}
     >
       {/* Profile Header */}
       <View className="bg-white px-4 py-8 items-center border-b border-gray-200">
         <View className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full items-center justify-center border-4 border-white shadow-lg">
           <Ionicons name="person" size={48} color="white" />
         </View>
-        <Text className="text-2xl font-bold text-gray-900 mt-4">{user?.name || 'User'}</Text>
-        <Text className="text-gray-600 text-sm mt-1">{user?.email || 'user@example.com'}</Text>
+        <Text className="text-2xl font-bold text-gray-900 mt-4">
+          {user?.name || "User"}
+        </Text>
+        <Text className="text-gray-600 text-sm mt-1">
+          {user?.email || "user@example.com"}
+        </Text>
       </View>
 
       {/* Profile Info */}
       <View className="bg-white mx-4 mt-6 rounded-2xl p-4 shadow-sm">
-        <Text className="text-lg font-semibold text-gray-900 mb-4">Profile Information</Text>
-        
+        <Text className="text-lg font-semibold text-gray-900 mb-4">
+          Profile Information
+        </Text>
+
         <View className="space-y-4 gap-4">
           <View className="flex-row items-center justify-between pb-4 border-b border-gray-100">
             <View className="flex-row items-center gap-3">
@@ -38,7 +44,9 @@ export default function ProfileScreen() {
               </View>
               <Text className="text-gray-700 font-medium">Email</Text>
             </View>
-            <Text className="text-gray-600 text-sm">{user?.email || 'N/A'}</Text>
+            <Text className="text-gray-600 text-sm">
+              {user?.email || "N/A"}
+            </Text>
           </View>
 
           <View className="flex-row items-center justify-between pb-4 border-b border-gray-100">
@@ -81,7 +89,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* Logout Button */}
-      <TouchableOpacity 
+      <TouchableOpacity
         onPress={handleLogout}
         className="bg-red-50 border-2 border-red-200 mx-4 mt-8 rounded-xl py-4 items-center mb-6"
         activeOpacity={0.7}
@@ -94,4 +102,3 @@ export default function ProfileScreen() {
     </ScrollView>
   );
 }
-
